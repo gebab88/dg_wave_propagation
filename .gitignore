@@ -1,0 +1,16 @@
+# Build artifacts
+obj/
+bin/
+*.o
+
+# Simulation output (frames written to CWD, video, data dumps)
+run/
+/*.png
+*.mp4
+*.dat
+
+# IDE
+.codelite/
+
+# macOS
+.DS_Store
