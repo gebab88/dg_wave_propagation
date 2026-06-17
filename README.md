@@ -85,10 +85,10 @@ Das Programm schreibt **pro Zeitschritt ein PNG** (`00000000.png`, …) ins aktu
 
 ```sh
 mkdir -p run && cd run
-../bin/Release/DiscontinousGalerkin ../config.yaml </dev/null   # Config-Pfad als Argument
+../bin/Release/DiscontinousGalerkin </dev/null   # findet config.yaml automatisch
 ```
 
-Der erste Parameter ist der Pfad zur Config (hier `../config.yaml`, da aus `run/` heraus gestartet); **ohne Argument** wird `config.yaml` im aktuellen Verzeichnis gesucht. Das `</dev/null` überspringt den blockierenden „Press enter to exit"-Prompt. Mit der Default-Konfiguration entstehen ~12000 Frames; Gesamtlaufzeit ca. **36 s** (Simulation ~21 s, Plotten + Video ~15 s).
+Ohne Argument wird `config.yaml` zuerst im aktuellen Verzeichnis gesucht, sonst **neben der Binary** (Repo-Wurzel, zwei Ebenen über `bin/Release/`) — der `run/`-Workflow braucht daher kein Argument. Ein expliziter Pfad als erstes Argument hat Vorrang (z. B. `../bin/Release/DiscontinousGalerkin meine_config.yaml`). Das `</dev/null` überspringt den blockierenden „Press enter to exit"-Prompt. Mit der Default-Konfiguration entstehen ~12000 Frames; Gesamtlaufzeit ca. **36 s** (Simulation ~21 s, Plotten + Video ~15 s).
 
 Das Video kann alternativ separat erzeugt werden (PNGs müssen im aktuellen Verzeichnis liegen):
 

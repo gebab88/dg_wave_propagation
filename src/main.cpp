@@ -49,14 +49,29 @@ int main( int argc, char *argv[] ){
     // in the CWD). Derived quantities (Npoints, Z_0, omega, x, dx, Jac) are computed
     // here. Variable names/types match the old config.hpp, so the rest of main() is
     // unchanged.
-    const std::string configPath = (argc > 1) ? argv[1] : "config.yaml";
+    // Resolve the config path: an explicit argv[1] wins; otherwise look for
+    // config.yaml in the CWD, then next to the binary (repo root, two levels above
+    // bin/Release/) so `cd run && ../bin/Release/...` works without an argument.
+    std::string configPath = (argc > 1) ? std::string(argv[1]) : std::string("config.yaml");
     YAML::Node cfg;
     try {
         cfg = YAML::LoadFile(configPath);
     } catch (const std::exception &e) {
-        cerr << "Error: could not read config '" << configPath << "': " << e.what() << "\n"
-             << "Pass the path as the first argument, or place config.yaml in the CWD." << endl;
-        return 1;
+        bool recovered = false;
+        if (argc <= 1) {   // fall back to the config shipped next to the executable
+            std::string exe = argv[0];
+            auto slash = exe.find_last_of('/');
+            std::string exeDir = (slash == std::string::npos) ? std::string(".") : exe.substr(0, slash);
+            std::string alt = exeDir + "/../../config.yaml";
+            try { cfg = YAML::LoadFile(alt); configPath = alt; recovered = true; }
+            catch (const std::exception &) {}
+        }
+        if (!recovered) {
+            cerr << "Error: could not read config '" << configPath << "': " << e.what() << "\n"
+                 << "Pass the path as the first argument, or place config.yaml in the CWD "
+                    "(or next to the binary)." << endl;
+            return 1;
+        }
     }
 
     const std::string TimeIntegration = cfgGet<std::string>(cfg, "TimeIntegration");
