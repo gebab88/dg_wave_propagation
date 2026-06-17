@@ -1,5 +1,7 @@
 # Discontinuous Galerkin — 1D Akustik-Wellengleichung
 
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+
 Ein 1D-Löser für die lineare **akustische Wellengleichung** mit der **Discontinuous-Galerkin-Methode** (DG) in C++. Eine von links einlaufende Sinuswelle breitet sich durch ein Rohr aus und wird an der starren rechten Wand reflektiert; das Ergebnis wird als PNG-Bildfolge geplottet und automatisch zu einem Video zusammengesetzt.
 
 ![Stehende Welle im eingeschwungenen Zustand (Druck p über x)](docs/standing-wave.png)
@@ -141,3 +143,11 @@ Verfügbare Zeitintegratoren (über `TIMEINT` im Makefile): `EulerExplicit`, `Ru
 - Ordnung 1 ist im Setup unvollständig; funktional getestet sind **Ordnung 2 und 5**.
 - HDF5 ist installiert, wird aber **nicht** gelinkt (alle HDF5-Aufrufe im Code sind auskommentiert).
 - Frames im Frame-Index, der ein Vielfaches der Anregungsperiode ist, treffen den zeitlichen Nulldurchgang der stehenden Welle und wirken daher flach — das ist korrektes Verhalten, kein Fehler.
+
+---
+
+## Lizenz
+
+Dieses Projekt steht unter der **GNU General Public License v3.0** — siehe [`LICENSE`](LICENSE).
+
+> Hinweis: `include/gnuplot-iostream.h` ist eine eingebundene Fremdbibliothek (MIT-lizenziert) und behält ihre eigene Lizenz.
