@@ -35,7 +35,6 @@ mit Kompressionsmodul `K = Z₀·c₀ = ρ₀·c₀²` und Impedanz `Z₀ = ρ�
 | `src/InitialAndBoundary.{cpp,hpp}` | Anfangs- und Randbedingungen |
 | `src/vandermonde.{cpp,hpp}` | Vandermonde- & Differentiationsmatrix (für die Steifigkeitsmatrix) |
 | `src/ClassPlot.{cpp,hpp}` | Paralleles Plotten der Frames + Video-Erzeugung |
-| `include/gnuplot-iostream.h` | Fremdbibliothek: C++-Schnittstelle zu gnuplot |
 | `Makefile` | Build (für macOS / MacPorts konfiguriert) |
 
 ---
@@ -48,20 +47,18 @@ Das Projekt ist für **macOS mit MacPorts** und Apple `clang++` eingerichtet (BL
 sudo port install armadillo
 sudo port install gnuplot -qt5 -wxwidgets -aquaterm -pangocairo -luaterm   # nur PNG-Terminal nötig
 sudo port install libomp                                                   # OpenMP
-sudo port install boost188                                                 # falls noch nicht vorhanden
 sudo port install ffmpeg                                                   # für die Video-Erzeugung
 ```
 
 | Bibliothek | Verwendung | Hinweis |
 |---|---|---|
 | Armadillo | Lineare Algebra | nur Header (`-DARMA_DONT_USE_WRAPPER`) + Accelerate |
-| gnuplot | Plotten (PNG) | wird zur Laufzeit als Prozess aufgerufen |
-| Boost 1.88 | `gnuplot-iostream.h` | versionierter Pfad `/opt/local/libexec/boost/1.88`, Libs mit `-mt` |
+| gnuplot | Plotten (PNG) | wird zur Laufzeit als Prozess aufgerufen (Skript + `system()`) |
 | libomp | OpenMP (Zellschleife) | Apple clang braucht `-Xpreprocessor -fopenmp` |
 | ffmpeg | Frames → `output.mp4` | |
 | Accelerate | BLAS/LAPACK | macOS-Framework, kein extra Paket |
 
-> **Andere Plattform / andere Versionen:** Die Pfade stehen oben im `Makefile` (`MACPORTS`, `BOOSTDIR`, `OMPFLAGS`, `OMPLIBS`). Bei einer anderen Boost-Version `BOOSTDIR` anpassen; unter Linux Accelerate durch `-lopenblas -llapack` ersetzen.
+> **Andere Plattform / andere Versionen:** Die Pfade stehen oben im `Makefile` (`MACPORTS`, `OMPFLAGS`, `OMPLIBS`). Unter Linux Accelerate durch `-lopenblas -llapack` ersetzen.
 
 ---
 
@@ -149,5 +146,3 @@ Verfügbare Zeitintegratoren (über `TIMEINT` im Makefile): `EulerExplicit`, `Ru
 ## Lizenz
 
 Dieses Projekt steht unter der **GNU General Public License v3.0** — siehe [`LICENSE`](LICENSE).
-
-> Hinweis: `include/gnuplot-iostream.h` ist eine eingebundene Fremdbibliothek (MIT-lizenziert) und behält ihre eigene Lizenz.

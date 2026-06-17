@@ -7,8 +7,6 @@
 #include <stdio.h>
 #include <chrono>
 
-#include "gnuplot-iostream.h"
-
 #include "InitialAndBoundary.hpp"
 #include "ClassdXdt.hpp"
 #include "vandermonde.hpp"

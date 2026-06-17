@@ -1,5 +1,4 @@
 #include "ClassPlot.hpp"
-#include "gnuplot-iostream.h"
 #include <string>
 #include <cstdlib>
 #include <cstdio>
@@ -7,7 +6,6 @@
 #include <iomanip>
 #include <thread>
 #include <vector>
-//#include <hdf5/serial/hdf5.h>
 
 ClassPlot::ClassPlot(mat solution,vec TimeSteps, const vec &xnodes)
 {

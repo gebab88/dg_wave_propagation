@@ -9,11 +9,9 @@ ZEITODERFREQ	= 1
 
 DEFINES			= -DZEITODERFREQ=$(ZEITODERFREQ) -DORDER=$(ORDER) -DTIMEINTSCHEME=$(TIMEINT) -DZEITINT
 
-# MacPorts paths. Boost 1.88 lives in a versioned libexec dir; armadillo headers
-# are under /opt/local/include. Adjust BOOSTDIR if the boost version changes.
+# MacPorts paths. Armadillo headers are under /opt/local/include.
 MACPORTS	= /opt/local
-BOOSTDIR	= $(MACPORTS)/libexec/boost/1.88
-INCLUDES	= -Iinclude -I$(MACPORTS)/include -I$(BOOSTDIR)/include
+INCLUDES	= -Iinclude -I$(MACPORTS)/include
 
 # OpenMP via MacPorts libomp (Apple clang needs -Xpreprocessor -fopenmp and the
 # versioned libomp paths). Used to parallelize the per-cell loop in ClassdXdt.
@@ -27,9 +25,10 @@ CFLAGS  = -Wall  $(DEBUGOROPTI)   -std=c++14 -m64 -pthread  $(INCLUDES) $(OMPFLA
 #LDFLAGS = -L/home/georg/Downloads/armadillo-7.900.1/libarmadillo.so
 #LDFLAGS = -larmadillo -lboost_iostreams -lboost_system -lboost_filesystem  -llapack -lopenblas
 
-# MacPorts boost188 is built multi-threaded only (-mt suffix). HDF5 isn't used
-# (all hdf5 calls in the code are commented out), so we don't link it.
-LDFLAGS =   -framework Accelerate  -pthread $(OMPLIBS)  -L$(BOOSTDIR)/lib  -lboost_iostreams-mt -lboost_system-mt -lboost_filesystem-mt
+# HDF5 isn't used (all hdf5 calls in the code are commented out), so we don't
+# link it. Boost / gnuplot-iostream were dropped too: the solver talks to gnuplot
+# directly (script files + the gnuplot process, see ClassPlot), so neither is needed.
+LDFLAGS =   -framework Accelerate  -pthread $(OMPLIBS)
 
 #LDFLAGS = -larmadillo  -DARMA_DONT_USE_WRAPPER -llapack -lopen-blas
 
@@ -68,7 +67,7 @@ obj/Release/vandermonde.o: src/vandermonde.cpp $(HEADERS)
 	$(CXX) $(CFLAGS) -c $< -o obj/Release/vandermonde.o
 
 obj/Release/ClassPlot.o: src/ClassPlot.cpp $(HEADERS)
-	$(CXX) $(CFLAGS) -DGNUPLOT_ENABLE_CXX11 -c $< -o obj/Release/ClassPlot.o
+	$(CXX) $(CFLAGS) -c $< -o obj/Release/ClassPlot.o
 
 
 video:
