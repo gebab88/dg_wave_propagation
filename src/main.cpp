@@ -59,8 +59,6 @@ int main( int argc, char *argv[] ){
         return 1;
     }
 
-    const std::string scheme          = cfgGet<std::string>(cfg, "scheme");
-    const std::string KeyOscillator   = cfgGet<std::string>(cfg, "KeyOscillator");
     const std::string TimeIntegration = cfgGet<std::string>(cfg, "TimeIntegration");
 
     const float  CFLReserve = cfgGet<float>(cfg, "CFLReserve");

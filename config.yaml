@@ -6,9 +6,6 @@
 #   Npoints = N + 1,  Z_0 = c_0 * rho_0,  omega = 2*pi*freq_i,
 #   x = linspace(x0, x1, Npoints),  dx = x[1]-x[0],  Jac = dx/2.
 
-scheme: DG
-KeyOscillator: without
-
 # Time integrator. One of:
 #   EulerExplicit | RungeKuttaClassic | RungeKuttaSecond |
 #   RungeKuttaSecondOrder | PredictorCorrectorHeun
