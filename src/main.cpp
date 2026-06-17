@@ -6,6 +6,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <chrono>
+#include <stdexcept>
+
+#include <yaml-cpp/yaml.h>
 
 #include "InitialAndBoundary.hpp"
 #include "ClassdXdt.hpp"
@@ -15,12 +18,77 @@
 using namespace arma;
 using namespace std;
 
+// Read a required scalar from the YAML config. yaml-cpp's exceptions for a
+// missing key or a wrong-typed value are anonymous and, if uncaught, abort the
+// process via std::terminate. This wrapper names the offending key (and shows
+// the bad value) and exits cleanly with status 1 instead.
+template <typename T>
+static T cfgGet(const YAML::Node &cfg, const char *key) {
+    if (!cfg[key]) {
+        cerr << "Config error: missing key '" << key << "'" << endl;
+        exit(EXIT_FAILURE);
+    }
+    try {
+        return cfg[key].as<T>();
+    } catch (const YAML::Exception &) {
+        cerr << "Config error: key '" << key << "' has an invalid value";
+        if (cfg[key].IsScalar())
+            cerr << " ('" << cfg[key].Scalar() << "')";
+        cerr << endl;
+        exit(EXIT_FAILURE);
+    }
+}
+
 
 int main( int argc, char *argv[] ){
     chrono::time_point<chrono::system_clock> StartTime, EndTimeCalc,EndTimePlot;
     StartTime = chrono::system_clock::now();
 
-    #include "config.hpp"
+    // ---- Runtime configuration (replaces the former compile-time include/config.hpp) ----
+    // Independent parameters are read from a YAML file (argv[1], else "config.yaml"
+    // in the CWD). Derived quantities (Npoints, Z_0, omega, x, dx, Jac) are computed
+    // here. Variable names/types match the old config.hpp, so the rest of main() is
+    // unchanged.
+    const std::string configPath = (argc > 1) ? argv[1] : "config.yaml";
+    YAML::Node cfg;
+    try {
+        cfg = YAML::LoadFile(configPath);
+    } catch (const std::exception &e) {
+        cerr << "Error: could not read config '" << configPath << "': " << e.what() << "\n"
+             << "Pass the path as the first argument, or place config.yaml in the CWD." << endl;
+        return 1;
+    }
+
+    const std::string scheme          = cfgGet<std::string>(cfg, "scheme");
+    const std::string KeyOscillator   = cfgGet<std::string>(cfg, "KeyOscillator");
+    const std::string TimeIntegration = cfgGet<std::string>(cfg, "TimeIntegration");
+
+    const float  CFLReserve = cfgGet<float>(cfg, "CFLReserve");
+
+    const uword  N       = static_cast<uword>(cfgGet<unsigned long>(cfg, "N"));
+    const uword  Npoints = N + 1;
+    const uword  order   = static_cast<uword>(cfgGet<unsigned long>(cfg, "order"));
+
+    const double t0 = cfgGet<double>(cfg, "t0");
+    const double t1 = cfgGet<double>(cfg, "t1");
+    const float  x0 = cfgGet<float>(cfg, "x0");
+    const float  x1 = cfgGet<float>(cfg, "x1");
+
+    vec x = linspace<vec>(x0, x1, Npoints);
+    const double dx  = x[1] - x[0];
+    const double Jac = dx / 2.0;
+
+    const float  c_0   = cfgGet<float>(cfg, "c_0");
+    const float  rho_0 = cfgGet<float>(cfg, "rho_0");
+    const float  Z_0   = c_0 * rho_0;
+
+    const double freq_i = cfgGet<double>(cfg, "freq_i");
+    const double omega  = 2 * M_PI * freq_i;
+
+    const double mu     = cfgGet<double>(cfg, "mu");
+    const double sigma  = cfgGet<double>(cfg, "sigma");
+    const double height = cfgGet<double>(cfg, "height");
+    // ------------------------------------------------------------------------------------
 
     float lambda_1 = c_0;
     float lambda_2 = -c_0;
@@ -30,15 +98,11 @@ int main( int argc, char *argv[] ){
     mat R_inv_calc=inv(R);
 
     mat lambda_plus = {{lambda_1, 0.0},{0.0 ,0.0}};
-
     mat lambda_minus ={{0.0 ,  0.0},{0.0 ,  lambda_2}};
 
     // Jacobi Matrices
-    mat Aplus = R * lambda_plus*R_inv;
-    //Aplus.print("Aplus= ");
-
-    mat Aminus = R * lambda_minus *R_inv;
-    //Aminus.print("Aminus= ");
+    mat Aplus = R * lambda_plus * R_inv;
+    mat Aminus = R * lambda_minus * R_inv;
 
     mat Q,invM;
     mat U0;
@@ -46,7 +110,6 @@ int main( int argc, char *argv[] ){
 
     vec xnodes={ };
 
-    #if ZEITODERFREQ == 1
     {
     InitialAndBoundary InitialBoundaryObj(height,Z_0,mu,sigma);
     U0 = zeros<mat>(2,order*N);
@@ -315,7 +378,7 @@ int main( int argc, char *argv[] ){
     
     cout << "Plotting starts!" << endl;
 
-    ClassPlot PlotObj(solution,TimeSteps,xnodes);
+    ClassPlot PlotObj(solution, TimeSteps, xnodes);
 
     PlotObj.Plot();
 
@@ -330,10 +393,6 @@ int main( int argc, char *argv[] ){
 
     cout << "Press enter to exit." << endl;
 	cin.get();
-
-    #else
-
-    #endif  //ifdef ZEITINT endif
 
     return 0;
 }

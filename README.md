@@ -30,7 +30,7 @@ mit Kompressionsmodul `K = Z₀·c₀ = ρ₀·c₀²` und Impedanz `Z₀ = ρ�
 | Datei | Zweck |
 |---|---|
 | `src/main.cpp` | Aufbau (Anfangswerte, Massen-/Steifigkeitsmatrix), Zeitschleife, Orchestrierung |
-| `include/config.hpp` | Alle Simulationsparameter (wird in `main` per `#include` eingebunden) |
+| `config.yaml` | Alle Simulationsparameter (zur **Laufzeit** via yaml-cpp gelesen) |
 | `src/ClassdXdt.{cpp,hpp}` | Räumlicher DG-Operator (rechte Seite der ODE, numerischer Fluss) + Zeitintegratoren |
 | `src/InitialAndBoundary.{cpp,hpp}` | Anfangs- und Randbedingungen |
 | `src/vandermonde.{cpp,hpp}` | Vandermonde- & Differentiationsmatrix (für die Steifigkeitsmatrix) |
@@ -47,6 +47,7 @@ Das Projekt ist für **macOS mit MacPorts** und Apple `clang++` eingerichtet (BL
 sudo port install armadillo
 sudo port install gnuplot -qt5 -wxwidgets -aquaterm -pangocairo -luaterm   # nur PNG-Terminal nötig
 sudo port install libomp                                                   # OpenMP
+sudo port install yaml-cpp                                                 # Laufzeit-Config (config.yaml)
 sudo port install ffmpeg                                                   # für die Video-Erzeugung
 ```
 
@@ -54,6 +55,7 @@ sudo port install ffmpeg                                                   # fü
 |---|---|---|
 | Armadillo | Lineare Algebra | nur Header (`-DARMA_DONT_USE_WRAPPER`) + Accelerate |
 | gnuplot | Plotten (PNG) | wird zur Laufzeit als Prozess aufgerufen (Skript + `system()`) |
+| yaml-cpp | Laufzeit-Config | parst `config.yaml`; gelinkt mit `-lyaml-cpp` |
 | libomp | OpenMP (Zellschleife) | Apple clang braucht `-Xpreprocessor -fopenmp` |
 | ffmpeg | Frames → `output.mp4` | |
 | Accelerate | BLAS/LAPACK | macOS-Framework, kein extra Paket |
@@ -69,15 +71,11 @@ make Release          # -> bin/Release/DiscontinousGalerkin
 make clean            # Objektdateien, Binary, *.png, *.mp4, *.dat entfernen
 ```
 
-Compile-Zeit-Parameter stehen oben im `Makefile`:
+Simulationsparameter (Ordnung, `N`, Zeitintegrator, Fluid/Gebiet) werden **nicht** mehr zur Compile-Zeit gesetzt, sondern zur Laufzeit aus `config.yaml` gelesen — dafür ist **kein** Neukompilieren nötig (siehe [Konfiguration](#konfiguration-configyaml)). Das einzige Compile-Zeit-Flag im `Makefile` ist:
 
 | Variable | Default | Bedeutung |
 |---|---|---|
-| `ORDER` | `5` | Polynom-/Knotenordnung pro Zelle (funktional: 2 und 5) |
-| `TIMEINT` | `"PredictorCorrectorHeun"` | Zeitintegrationsverfahren |
 | `DEBUGOROPTI` | `-O3` | Optimierungs-/Debug-Flags |
-
-Die Objektregeln hängen von `$(HEADERS)` ab — Änderungen an `config.hpp` o. ä. lösen also ein Neukompilieren aus.
 
 ---
 
@@ -87,10 +85,10 @@ Das Programm schreibt **pro Zeitschritt ein PNG** (`00000000.png`, …) ins aktu
 
 ```sh
 mkdir -p run && cd run
-../bin/Release/DiscontinousGalerkin </dev/null     # </dev/null überspringt das blockierende cin.get()
+../bin/Release/DiscontinousGalerkin ../config.yaml </dev/null   # Config-Pfad als Argument
 ```
 
-Das `</dev/null` ist nötig, damit der abschließende „Press enter to exit"-Prompt nicht blockiert. Mit der Default-Konfiguration entstehen ~12000 Frames; Gesamtlaufzeit ca. **36 s** (Simulation ~21 s, Plotten + Video ~15 s).
+Der erste Parameter ist der Pfad zur Config (hier `../config.yaml`, da aus `run/` heraus gestartet); **ohne Argument** wird `config.yaml` im aktuellen Verzeichnis gesucht. Das `</dev/null` überspringt den blockierenden „Press enter to exit"-Prompt. Mit der Default-Konfiguration entstehen ~12000 Frames; Gesamtlaufzeit ca. **36 s** (Simulation ~21 s, Plotten + Video ~15 s).
 
 Das Video kann alternativ separat erzeugt werden (PNGs müssen im aktuellen Verzeichnis liegen):
 
@@ -100,10 +98,14 @@ make -C .. video        # ffmpeg %08d.png -> output.mp4
 
 ---
 
-## Konfiguration (`include/config.hpp`)
+## Konfiguration (`config.yaml`)
+
+Alle Parameter werden zur Laufzeit aus `config.yaml` gelesen — Änderungen wirken **ohne Neukompilieren**. Nur unabhängige Größen stehen in der Datei; abgeleitete (`Npoints`, `Z_0`, `omega`, `x`, `dx`, `Jac`) werden im Code berechnet.
 
 | Parameter | Default | Bedeutung |
 |---|---|---|
+| `order` | `5` | Knotenordnung pro Zelle (funktional: 2, 5 und allgemein ≥ 3, z. B. 8) |
+| `TimeIntegration` | `PredictorCorrectorHeun` | Zeitintegrationsverfahren |
 | `N` | `50` | Anzahl Zellen |
 | `x0, x1` | `0.0, 0.5` | Gebiet [m] |
 | `t0, t1` | `0.0, 2e-2` | Zeitintervall [s] |
@@ -121,7 +123,7 @@ deltaT = CFLReserve · dx / (|c₀| · (2·order − 1))
 
 Dadurch ist `CFLReserve` für alle Ordnungen gleich „sicher". Höhere Ordnung ⇒ kleinerer Zeitschritt ⇒ mehr Frames.
 
-Verfügbare Zeitintegratoren (über `TIMEINT` im Makefile): `EulerExplicit`, `RungeKuttaClassic`, `RungeKuttaSecond`, `RungeKuttaSecondOrder`, `PredictorCorrectorHeun`.
+Verfügbare Werte für `TimeIntegration`: `EulerExplicit`, `RungeKuttaClassic`, `RungeKuttaSecond`, `RungeKuttaSecondOrder`, `PredictorCorrectorHeun`.
 
 ---
 
