@@ -9,10 +9,10 @@
 
 #include "gnuplot-iostream.h"
 
-#include "InitialAndBoundary.h"
-#include "ClassdXdt.h"
-#include "vandermonde.h"
-#include "ClassPlot.h"
+#include "InitialAndBoundary.hpp"
+#include "ClassdXdt.hpp"
+#include "vandermonde.hpp"
+#include "ClassPlot.hpp"
 
 using namespace arma;
 using namespace std;

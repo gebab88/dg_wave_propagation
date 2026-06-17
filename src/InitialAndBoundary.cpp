@@ -1,4 +1,4 @@
-#include "InitialAndBoundary.h"
+#include "InitialAndBoundary.hpp"
 #include <math.h>
 
 InitialAndBoundary::InitialAndBoundary(double height, double Z_0, double mu, double sigma, std::string BoundaryRightEnd)

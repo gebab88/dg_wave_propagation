@@ -1,4 +1,4 @@
-#include "ClassPlot.h"
+#include "ClassPlot.hpp"
 #include "gnuplot-iostream.h"
 #include <string>
 #include <cstdlib>

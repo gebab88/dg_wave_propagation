@@ -1,4 +1,4 @@
-#include "vandermonde.h"
+#include "vandermonde.hpp"
 
 mat VanDer(const uword &order,const vec &Stuetz){
     mat A=zeros<mat>(order,order);

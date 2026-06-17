@@ -1,4 +1,4 @@
-#include "ClassdXdt.h"
+#include "ClassdXdt.hpp"
 #include <omp.h>
 
 ClassdXdt::ClassdXdt(uword N, uword order,double dx,mat Aplus, mat Aminus,double Z_0,

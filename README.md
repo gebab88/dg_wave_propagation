@@ -31,10 +31,10 @@ mit Kompressionsmodul `K = Z₀·c₀ = ρ₀·c₀²` und Impedanz `Z₀ = ρ�
 |---|---|
 | `src/main.cpp` | Aufbau (Anfangswerte, Massen-/Steifigkeitsmatrix), Zeitschleife, Orchestrierung |
 | `include/config.hpp` | Alle Simulationsparameter (wird in `main` per `#include` eingebunden) |
-| `src/ClassdXdt.{cpp,h}` | Räumlicher DG-Operator (rechte Seite der ODE, numerischer Fluss) + Zeitintegratoren |
-| `src/InitialAndBoundary.{cpp,h}` | Anfangs- und Randbedingungen |
-| `src/vandermonde.{cpp,h}` | Vandermonde- & Differentiationsmatrix (für die Steifigkeitsmatrix) |
-| `src/ClassPlot.{cpp,h}` | Paralleles Plotten der Frames + Video-Erzeugung |
+| `src/ClassdXdt.{cpp,hpp}` | Räumlicher DG-Operator (rechte Seite der ODE, numerischer Fluss) + Zeitintegratoren |
+| `src/InitialAndBoundary.{cpp,hpp}` | Anfangs- und Randbedingungen |
+| `src/vandermonde.{cpp,hpp}` | Vandermonde- & Differentiationsmatrix (für die Steifigkeitsmatrix) |
+| `src/ClassPlot.{cpp,hpp}` | Paralleles Plotten der Frames + Video-Erzeugung |
 | `include/gnuplot-iostream.h` | Fremdbibliothek: C++-Schnittstelle zu gnuplot |
 | `Makefile` | Build (für macOS / MacPorts konfiguriert) |
 
