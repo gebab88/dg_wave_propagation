@@ -140,7 +140,7 @@ Verfügbare Zeitintegratoren (über `TIMEINT` im Makefile): `EulerExplicit`, `Ru
 ## Hinweise / Bekanntes
 
 - Der Projektname enthält den Tippfehler „Discontinous" (statt „Discontinuous"); das Binary heißt entsprechend `DiscontinousGalerkin`.
-- Ordnung 1 ist im Setup unvollständig; funktional getestet sind **Ordnung 2 und 5**.
+- Ordnung 2, 5 und beliebige Ordnung ≥ 3 (Gauß-Legendre-Knoten/-Gewichte werden via Golub-Welsch berechnet) funktionieren; Ordnung 8 ist verifiziert. Ordnung 1 ist im Setup unvollständig.
 - HDF5 ist installiert, wird aber **nicht** gelinkt (alle HDF5-Aufrufe im Code sind auskommentiert).
 - Frames im Frame-Index, der ein Vielfaches der Anregungsperiode ist, treffen den zeitlichen Nulldurchgang der stehenden Welle und wirken daher flach — das ist korrektes Verhalten, kein Fehler.
 

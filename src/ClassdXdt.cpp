@@ -1,4 +1,5 @@
 #include "ClassdXdt.hpp"
+#include "vandermonde.hpp"
 #include <omp.h>
 
 ClassdXdt::ClassdXdt(uword N, uword order,double dx,mat Aplus, mat Aminus,double Z_0,
@@ -69,18 +70,16 @@ ClassdXdt::ClassdXdt(uword N, uword order,double dx,mat Aplus, mat Aminus,double
             psi.cols(0,1)= mat({{l1(-1), 0 },  {0, l1(-1)}, {l2(-1), 0}, {0, l2(-1)},  {l3(-1), 0}, {0, l3(-1)},  {l4(-1), 0}, {0, l4(-1)},  {l5(-1), 0}, {0, l5(-1)} });
             //psi.print("psi= ");
             } break;
-        case 8:
+        default:
             {
-            /*
-            [](double z) ->double {l1 = (z-z2)/(z1-z2) * (z-z3)/(z1-z3) * (z-z4)/(z1-z4) * (z-z5)/(z1-z5) * (z-z6)/(z1-z6) * (z-z7)/(z1-z7) * (z-z8)/(z1-z8); return;}
-            [](double z) ->double {l2 = (z-z1)/(z2-z1) * (z-z3)/(z2-z3) * (z-z4)/(z2-z4) * (z-z5)/(z2-z5) * (z-z6)/(z2-z6) * (z-z7)/(z2-z7) * (z-z8)/(z2-z8); return;}
-            [](double z) ->double {l3 = (z-z1)/(z3-z1) * (z-z2)/(z3-z2) * (z-z4)/(z3-z4) * (z-z5)/(z3-z5) * (z-z6)/(z3-z6) * (z-z7)/(z3-z7) * (z-z8)/(z3-z8); return;}
-            [](double z) ->double {l4 = (z-z1)/(z4-z1) * (z-z2)/(z4-z2) * (z-z3)/(z4-z3) * (z-z5)/(z4-z5) * (z-z6)/(z4-z6) * (z-z7)/(z4-z7) * (z-z8)/(z4-z8); return;}
-            [](double z) ->double {l5 = (z-z1)/(z5-z1) * (z-z2)/(z5-z2) * (z-z3)/(z5-z3) * (z-z4)/(z5-z4) * (z-z6)/(z5-z6) * (z-z7)/(z5-z7) * (z-z8)/(z5-z8); return;}
-            [](double z) ->double {l6 = (z-z1)/(z6-z1) * (z-z2)/(z6-z2) * (z-z3)/(z6-z3) * (z-z4)/(z6-z4) * (z-z5)/(z6-z5) * (z-z7)/(z6-z7) * (z-z8)/(z6-z8); return;}
-            [](double z) ->double {l7 = (z-z1)/(z7-z1) * (z-z2)/(z7-z2) * (z-z3)/(z7-z3) * (z-z4)/(z7-z4) * (z-z5)/(z7-z5) * (z-z6)/(z7-z6) * (z-z8)/(z7-z8); return;}
-            [](double z) ->double {l8 = (z-z1)/(z8-z1) * (z-z2)/(z8-z2) * (z-z3)/(z8-z3) * (z-z4)/(z8-z4) * (z-z5)/(z8-z5) * (z-z6)/(z8-z6) * (z-z7)/(z8-z7); return;}
-            */
+            // Generic edge-trace operator for any order (e.g. 8). psi columns hold
+            // the Lagrange basis values at the cell edges, interleaved with the 2x2
+            // identity (p,u) per node: cols 0-1 = left edge (z=-1), cols 2-3 = right
+            // edge (z=+1). kron(L,eye(2)) reproduces the explicit order-5 layout.
+            vec Stuetz, weights;
+            GaussLegendre(order, Stuetz, weights);
+            psi.cols(0,1)=kron(LagrangeAtPoint(Stuetz,-1.0), eye<mat>(2,2));
+            psi.cols(2,3)=kron(LagrangeAtPoint(Stuetz, 1.0), eye<mat>(2,2));
             } break;
         }
     }

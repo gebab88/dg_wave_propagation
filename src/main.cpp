@@ -175,7 +175,36 @@ int main( int argc, char *argv[] ){
 
     default:
         {
-        cout << "There is still no default case!";
+        // General order (e.g. 8): Gauss-Legendre nodes/weights computed on the
+        // fly, then the same construction as case 5 (diagonal mass matrix from
+        // the weights, stiffness Q = Funktional * D^T M). Mirrors case 5 exactly
+        // but parametrized by `order`.
+        mat ui(2,order,fill::zeros);
+
+        vec Stuetz, alpha;
+        GaussLegendre(order, Stuetz, alpha);   // nodes & weights on [-1,1]
+
+        for (uword i=0; i<N; i++) {
+            vec xi=0.5*(x[i]*ones(order)+x[i+1]*ones(order) + dx * Stuetz);
+            xnodes=join_cols(xnodes,xi);
+            InitialBoundaryObj.U_init(ui,order); //Initialisierung mit 0
+            U0.cols(i*order,(i+1)*order-1)=ui;
+        }
+
+        // Diagonal mass matrix: each node's weight is shared by both fields (p,u).
+        vec Mdiag=kron(alpha,ones<vec>(2));
+        mat M=diagmat(Mdiag);
+        invM=inv(M);
+        invM=kron(eye<mat>(N,N),invM);         //Expansion auf alle Zellen
+
+        // Stiffness matrix Q = Funktionalmat * D^T * M, kron'd to the 2-field system.
+        mat DT=TransposeDiffMatrix(order,Stuetz);
+        DT=kron(DT,eye<mat>(2,2));
+        Q=DT*M;
+
+        mat Funktionalmat={{0 ,  Z_0*c_0},{pow(rho_0,-1), 0}};
+        Funktionalmat=kron(eye<mat>(order,order),Funktionalmat);
+        Q=Funktionalmat*Q;
         } break;
 
     }
