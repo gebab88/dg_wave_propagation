@@ -63,9 +63,22 @@ int main( int argc, char *argv[] ){
 
     const float  CFLReserve = cfgGet<float>(cfg, "CFLReserve");
 
-    const uword  N       = static_cast<uword>(cfgGet<unsigned long>(cfg, "N"));
+    // Read N and order as signed so a negative value is rejected here instead of
+    // wrapping to a huge unsigned (-> bad_alloc / out-of-bounds). N < 2 underflows
+    // the inner-cell loop (k = 1 .. N-2); order < 1 yields an empty node set.
+    const long long N_in     = cfgGet<long long>(cfg, "N");
+    const long long order_in = cfgGet<long long>(cfg, "order");
+    if (N_in < 2) {
+        cerr << "Config error: N must be >= 2 (got " << N_in << ")" << endl;
+        return 1;
+    }
+    if (order_in < 1) {
+        cerr << "Config error: order must be >= 1 (got " << order_in << ")" << endl;
+        return 1;
+    }
+    const uword  N       = static_cast<uword>(N_in);
     const uword  Npoints = N + 1;
-    const uword  order   = static_cast<uword>(cfgGet<unsigned long>(cfg, "order"));
+    const uword  order   = static_cast<uword>(order_in);
 
     const double t0 = cfgGet<double>(cfg, "t0");
     const double t1 = cfgGet<double>(cfg, "t1");
