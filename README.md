@@ -77,6 +77,24 @@ Simulationsparameter (Ordnung, `N`, Zeitintegrator, Fluid/Gebiet) werden **nicht
 |---|---|---|
 | `DEBUGOROPTI` | `-O3` | Optimierungs-/Debug-Flags |
 
+### Linux/arm64 via Docker testen
+
+Der macOS-Build nutzt weiterhin Accelerate/MacPorts. Auf Linux schaltet der
+`Makefile` automatisch auf `g++`, OpenBLAS/LAPACK, yaml-cpp und `-fopenmp` um.
+Für einen schnellen ARM64-Smoke-Test gibt es ein Docker-Target:
+
+```sh
+# falls Colima verwendet wird:
+colima start --arch aarch64
+
+make docker-test-linux-arm64
+```
+
+Der Test baut ein `linux/arm64`-Image aus `Dockerfile.linux-arm64`, kompiliert
+das Projekt in Ubuntu 24.04 und startet eine kleine Simulation mit
+`tests/linux-smoke-config.yaml`. Dabei werden Config-Parsing, generische Ordnung
+3, gnuplot-Frames und ffmpeg-Video-Encoding geprüft.
+
 ---
 
 ## Ausführen

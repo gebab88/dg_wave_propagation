@@ -1,0 +1,23 @@
+# Small Linux/Docker smoke-test case. It keeps runtime and generated output low
+# while still exercising config parsing, the generic order path, plotting, and
+# ffmpeg video encoding.
+TimeIntegration: RungeKuttaClassic
+CFLReserve: 0.45
+
+N: 4
+order: 3
+
+t0: 0.0
+t1: 8.0e-5
+
+x0: 0.0
+x1: 0.5
+
+c_0: 300.0
+rho_0: 1.5
+
+freq_i: 3000.0
+
+mu: 0.1
+sigma: 0.02
+height: 1.0

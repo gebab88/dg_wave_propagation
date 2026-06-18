@@ -91,7 +91,10 @@ void ClassPlot::Plot()
     for (unsigned t = 0; t < nthreads; ++t)
         cmd += "gnuplot '" + scriptPath(t) + "' & ";
     cmd += "wait";
-    std::system(cmd.c_str());
+    int ret = std::system(cmd.c_str());
+    if (ret != 0)
+        std::cout << "Plotting failed (gnuplot returned " << ret
+                  << "). Is gnuplot on the PATH?" << std::endl;
 
     for (unsigned t = 0; t < nthreads; ++t)
         std::remove(scriptPath(t).c_str());

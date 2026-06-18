@@ -1,0 +1,10 @@
+.git
+.codelite
+bin
+obj
+run
+*.o
+*.png
+*.mp4
+*.dat
+.DS_Store

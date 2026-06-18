@@ -1,34 +1,53 @@
 #verbose with -v flag
 #
-#CXX 	        = g++-8
-CXX          	= clang++
-DEBUGOROPTI		= -O3 #-g -O0
+UNAME_S := $(shell uname -s)
+
+ifeq ($(origin CXX), default)
+  ifeq ($(UNAME_S),Darwin)
+    CXX = clang++
+  else
+    CXX = g++
+  endif
+endif
+
+DEBUGOROPTI		?= -O3 #-g -O0
 
 # Simulation parameters (order, N, time integrator, fluid/domain settings) are
 # now read at RUNTIME from config.yaml via yaml-cpp — they are no longer
 # compile-time -D macros, so no rebuild is needed to change them.
 
-# MacPorts paths. Armadillo headers are under /opt/local/include.
-MACPORTS	= /opt/local
-INCLUDES	= -Iinclude -I$(MACPORTS)/include
+BASE_CFLAGS = -Wall $(DEBUGOROPTI) -std=c++14 -pthread -Iinclude -DARMA_DONT_USE_WRAPPER
 
-# OpenMP via MacPorts libomp (Apple clang needs -Xpreprocessor -fopenmp and the
-# versioned libomp paths). Used to parallelize the per-cell loop in ClassdXdt.
-OMPFLAGS	= -Xpreprocessor -fopenmp -I$(MACPORTS)/include/libomp
-OMPLIBS		= -L$(MACPORTS)/lib/libomp -lomp
+ifeq ($(UNAME_S),Darwin)
+  # MacPorts paths. Armadillo headers are under /opt/local/include.
+  MACPORTS ?= /opt/local
+  INCLUDES = -I$(MACPORTS)/include
 
-# Armadillo 15 needs at least C++14. ARMA_DONT_USE_WRAPPER -> we link BLAS/LAPACK
-# ourselves via the Accelerate framework below.
-CFLAGS  = -Wall  $(DEBUGOROPTI)   -std=c++14 -m64 -pthread  $(INCLUDES) $(OMPFLAGS)  -DARMA_DONT_USE_WRAPPER
+  # OpenMP via MacPorts libomp (Apple clang needs -Xpreprocessor -fopenmp and the
+  # versioned libomp paths). Used to parallelize the per-cell loop in ClassdXdt.
+  OMPFLAGS = -Xpreprocessor -fopenmp -I$(MACPORTS)/include/libomp
+  OMPLIBS  = -L$(MACPORTS)/lib/libomp -lomp
+
+  # Armadillo 15 needs at least C++14. ARMA_DONT_USE_WRAPPER -> we link
+  # BLAS/LAPACK ourselves via the Accelerate framework below.
+  CFLAGS  = $(BASE_CFLAGS) -m64 $(INCLUDES) $(OMPFLAGS)
+
+  # HDF5 isn't used (all hdf5 calls in the code are commented out), so we don't
+  # link it. Boost / gnuplot-iostream were dropped too: the solver talks to gnuplot
+  # directly (script files + the gnuplot process, see ClassPlot), so neither is needed.
+  # yaml-cpp (MacPorts) is linked for runtime config parsing (config.yaml).
+  LDFLAGS = -framework Accelerate -pthread $(OMPLIBS) -L$(MACPORTS)/lib -lyaml-cpp
+else ifeq ($(UNAME_S),Linux)
+  # Linux builds use the distro BLAS/LAPACK packages. In the Docker test image
+  # those are OpenBLAS + LAPACK, and g++ supplies OpenMP via -fopenmp.
+  CFLAGS  = $(BASE_CFLAGS) -fopenmp
+  LDFLAGS = -pthread -fopenmp -lopenblas -llapack -lyaml-cpp
+else
+  $(error Unsupported OS "$(UNAME_S)"; set CFLAGS and LDFLAGS explicitly)
+endif
 
 #LDFLAGS = -L/home/georg/Downloads/armadillo-7.900.1/libarmadillo.so
 #LDFLAGS = -larmadillo -lboost_iostreams -lboost_system -lboost_filesystem  -llapack -lopenblas
-
-# HDF5 isn't used (all hdf5 calls in the code are commented out), so we don't
-# link it. Boost / gnuplot-iostream were dropped too: the solver talks to gnuplot
-# directly (script files + the gnuplot process, see ClassPlot), so neither is needed.
-# yaml-cpp (MacPorts) is linked for runtime config parsing (config.yaml).
-LDFLAGS =   -framework Accelerate  -pthread $(OMPLIBS)  -L$(MACPORTS)/lib -lyaml-cpp
 
 #LDFLAGS = -larmadillo  -DARMA_DONT_USE_WRAPPER -llapack -lopen-blas
 
@@ -92,4 +111,7 @@ clean:
 cleanPictures:
 	rm -rf *.png
 
-.PHONY: cleanOBJ cleanBIN cleanAll video  cleanPictures Release Debug
+docker-test-linux-arm64:
+	scripts/docker-linux-arm64-test.sh
+
+.PHONY: cleanOBJ cleanBIN cleanAll video cleanPictures Release Debug docker-test-linux-arm64
