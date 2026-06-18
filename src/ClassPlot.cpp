@@ -7,9 +7,9 @@
 #include <thread>
 #include <vector>
 
-ClassPlot::ClassPlot(mat solution,vec TimeSteps, const vec &xnodes)
+ClassPlot::ClassPlot(mat pressure,vec TimeSteps, const vec &xnodes)
 {
-    this->solution=solution;
+    this->pressure=pressure;
     this->TimeSteps=TimeSteps;
     this->xnodes=xnodes;
 }
@@ -24,10 +24,13 @@ void ClassPlot::Plot()
     const uword nframes = TimeSteps.size();
     if (nframes == 0) return;
 
-    // Shared, read-only: selects the pressure component (every 2nd entry) of a
-    // solution row. Built once; threads only read it (and solution/xnodes).
-    const mat ExtractMatrix = kron(eye<mat>(xnodes.size(),xnodes.size()),
-                                   rowvec({1 , 0}));
+    if (pressure.n_rows != nframes || pressure.n_cols != xnodes.size()) {
+        std::cout << "Plotting failed: pressure data has shape "
+                  << pressure.n_rows << "x" << pressure.n_cols
+                  << ", expected " << nframes << "x" << xnodes.size()
+                  << std::endl;
+        return;
+    }
 
     unsigned nthreads = std::thread::hardware_concurrency();
     if (nthreads == 0) nthreads = 4;
@@ -60,7 +63,7 @@ void ClassPlot::Plot()
         std::string str;
         for (uword i = tid; i < nframes; i += nthreads)
         {
-            vec p = ExtractMatrix * trans(solution.row(i));
+            vec p = trans(pressure.row(i));
 
             str = std::to_string(i);
             str.insert(str.begin(), 8 - str.length(), '0');

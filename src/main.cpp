@@ -315,19 +315,22 @@ int main( int argc, char *argv[] ){
     double t= t0;
     //Integration with RungeKutta
     vec TimeSteps={t};
-    mat solution={trans(X)};
     vec TimeStep(1);
+    const uvec pressureDofs = regspace<uvec>(0, 2, X.n_elem - 2);
+    auto pressureSnapshot = [&X, &pressureDofs]() -> rowvec {
+        return trans(X.elem(pressureDofs));
+    };
 
     X=U0;
     t=t0;
     TimeSteps={t};
-    solution={trans(X)};
+    mat pressureSolution={pressureSnapshot()};
 
     if (TimeIntegration=="EulerExplicit"){
         do {
             dXdtObj.EulerExplicitClassic(X, t);
             TimeStep[0]=t;
-            solution=join_vert(solution,trans(X));
+            pressureSolution=join_vert(pressureSolution,pressureSnapshot());
             TimeSteps=join_vert(TimeSteps,TimeStep);
             //X.print("X= ");
             cout<<"t=" << t<<endl;
@@ -340,7 +343,7 @@ int main( int argc, char *argv[] ){
             TimeStep[0]=t;
             //vec Xdiff=X1-X;
             //Xdiff.print("Xdiff= ");
-            solution=join_vert(solution,trans(X));
+            pressureSolution=join_vert(pressureSolution,pressureSnapshot());
             TimeSteps=join_vert(TimeSteps,TimeStep);
             //cout<<"t=" << t<<endl;
             //printf("t= %f0 \n",t);
@@ -353,7 +356,7 @@ int main( int argc, char *argv[] ){
             TimeStep[0] = t;
             //vec Xdiff=X1-X;
             //Xdiff.print("Xdiff= ");
-            solution = join_vert(solution, trans(X));
+            pressureSolution = join_vert(pressureSolution, pressureSnapshot());
             TimeSteps = join_vert(TimeSteps, TimeStep);
             //printf("t= %f0 \n",t);
         } while (t < t1);
@@ -365,7 +368,7 @@ int main( int argc, char *argv[] ){
         do{
                 dXdtObj.RungeKuttaSecondOrderHeun(X,t);
                 TimeStep[0]=t;
-                solution=join_vert(solution,trans(X));
+                pressureSolution=join_vert(pressureSolution,pressureSnapshot());
                 TimeSteps=join_vert(TimeSteps,TimeStep);
             } while  (t<t1);
     }
@@ -375,7 +378,7 @@ int main( int argc, char *argv[] ){
             //vec X1=X;
             dXdtObj.PredictorCorrectorHeun(X, t);
             TimeStep[0]=t;
-            solution=join_vert(solution,trans(X));
+            pressureSolution=join_vert(pressureSolution,pressureSnapshot());
             TimeSteps=join_vert(TimeSteps,TimeStep);
             //cout<<"t=" << t<<endl;
             //printf("t= %f0 \n",t);
@@ -387,8 +390,8 @@ int main( int argc, char *argv[] ){
     }
 
     //X.save("X.dat",raw_ascii);
-    //solution.print("Solution =");
-    //solution.save("X.dat",raw_ascii);
+    //pressureSolution.print("Pressure solution =");
+    //pressureSolution.save("X.dat",raw_ascii);
     //TimeSteps.save("time.dat",raw_ascii);
 
     EndTimeCalc = chrono::system_clock::now();
@@ -404,7 +407,7 @@ int main( int argc, char *argv[] ){
     
     cout << "Plotting starts!" << endl;
 
-    ClassPlot PlotObj(solution, TimeSteps, xnodes);
+    ClassPlot PlotObj(pressureSolution, TimeSteps, xnodes);
 
     PlotObj.Plot();
 

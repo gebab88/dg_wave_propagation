@@ -9,7 +9,7 @@ using namespace arma;
 class ClassPlot
 {
     public:
-        ClassPlot(mat solution, vec TimeSteps, const vec &xnodes);
+        ClassPlot(mat pressure, vec TimeSteps, const vec &xnodes);
         ~ClassPlot();
         void Plot();
         void MakeVideo(const std::string &filename = "output.mp4");
@@ -17,7 +17,7 @@ class ClassPlot
     protected:
 
     private:
-        mat solution;
+        mat pressure;
         vec TimeSteps;
         vec xnodes;
 };
