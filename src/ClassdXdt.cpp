@@ -81,6 +81,11 @@ ClassdXdt::ClassdXdt(uword N, uword order,double dx,mat Aplus, mat Aminus,double
             psi.cols(2,3)=kron(LagrangeAtPoint(Stuetz, 1.0), eye<mat>(2,2));
             } break;
         }
+
+    psiLeft=psi.cols(0,1);
+    psiRight=psi.cols(2,3);
+    leftInflowState=kron(ones<vec>(order),vec({1,1/Z_0}));
+    rightWallReflection=kron(fliplr(eye<mat>(order,order)), mat({{1,0},{0,-1}}));
     }
 
 ClassdXdt::~ClassdXdt() {
@@ -91,8 +96,8 @@ vec ClassdXdt::numericalFlux(const vec &Ul, const vec &Ur) {
     //Berechnung der Zustände am Zellenrand linkes Riemann-Problem
     // right/left are LOCAL (not members) so this is reentrant -> safe to call
     // concurrently from the OpenMP-parallelized cell loop in FluidMatrix.
-    vec right = trans(psi.cols(0,1))*Ur;
-    vec left  = trans(psi.cols(2,3))*Ul;
+    vec right = trans(psiLeft)*Ur;
+    vec left  = trans(psiRight)*Ul;
     // Berechnung des Flusses
     return Aminus*right + Aplus*left;
     }
@@ -107,38 +112,38 @@ void ClassdXdt::FluidMatrix(const vec &X, vec &dXdt, const double &t) {
         case 1: {
             //Berechnung des numerischen Flusses
             //Fluss am Rand bzw Randbedingungen
-            Flux.subvec(0,1)=   -psi.cols(2,3)*numericalFlux(X.subvec(0,1), X.subvec(2,3) )
+            Flux.subvec(0,1)=   -psiRight*numericalFlux(X.subvec(0,1), X.subvec(2,3) )
                                 //+ psi.cols(0,1) * numericalFlux(trans(vec({1,-1}))* X.subvec(0,1), X.subvec(0,1) ); //linker Rand
-                                +psi.cols(0,1)*numericalFlux(vec({1,1/Z_0})*sin(omega*t) , X.subvec(0,1));  //linker Rand Sinus
+                                +psiLeft*numericalFlux(leftInflowState*sin(omega*t) , X.subvec(0,1));  //linker Rand Sinus
 
 
-            Flux.subvec(Xend-1,Xend)=   -psi.cols(2,3)*numericalFlux(X.subvec(Xend-1,Xend),trans(vec({1,-1})*X.subvec(Xend-1,Xend)))
-                                        + psi.cols(0,1)*numericalFlux(X.subvec(Xend-3,Xend-2) , X.subvec(Xend-1,Xend));
+            Flux.subvec(Xend-1,Xend)=   -psiRight*numericalFlux(X.subvec(Xend-1,Xend),rightWallReflection*X.subvec(Xend-1,Xend))
+                                        + psiLeft*numericalFlux(X.subvec(Xend-3,Xend-2) , X.subvec(Xend-1,Xend));
 
              //Innere Zellen
             #pragma omp parallel for if(N>=1024) schedule(static)
             for (uword k=1; k<=uword(N-2); k++) {
-                Flux.subvec(2*k,2*(k+1)-1) = -psi.cols(2,3) * numericalFlux( X.subvec(2*k,2*(k+1)-1) ,  X.subvec(2*(k+1), 2*(k+2)-1   ))  //rechter Rand
-                                             +psi.cols(0,1) * numericalFlux( X.subvec(2*(k-1),2*k-1) ,  X.subvec(2*k,2*(k+1)-1) )  ; //linker Rand
+                Flux.subvec(2*k,2*(k+1)-1) = -psiRight * numericalFlux( X.subvec(2*k,2*(k+1)-1) ,  X.subvec(2*(k+1), 2*(k+2)-1   ))  //rechter Rand
+                                             +psiLeft * numericalFlux( X.subvec(2*(k-1),2*k-1) ,  X.subvec(2*k,2*(k+1)-1) )  ; //linker Rand
                 }
             }break;
 
         case 2: {
             //Berechnung des numerischen Flusses
             //Fluss am Rand bzw Randbedingungen
-            Flux.subvec(0,3)=   - psi.cols(2,3) * numericalFlux(X.subvec(0,3), X.subvec(4,7))
+            Flux.subvec(0,3)=   - psiRight * numericalFlux(X.subvec(0,3), X.subvec(4,7))
                                 //+ psi.cols(0,1) * numericalFlux(kron(mat({{0,1},{1,0}}), mat({{1,0},{0,-1}}))* X.subvec(0,3), X.subvec(0,3) );//zero Gradient Condition linker globaler Rand;
-                                + psi.cols(0,1) * numericalFlux(kron(ones<vec>(2),vec({1,1/Z_0}))*sin(omega*t) , X.subvec(0,3)); //von links kommende Sinuswelle
+                                + psiLeft * numericalFlux(leftInflowState*sin(omega*t) , X.subvec(0,3)); //von links kommende Sinuswelle
 
             //cout << "Xend=" << Xend << endl;
-            Flux.subvec(Xend-3,Xend)=   -psi.cols(2,3)*numericalFlux(X.subvec(Xend-3,Xend) , kron(mat({{0,1},{1,0}}), mat({{1,0},{0,-1}}))*X.subvec(Xend-3,Xend))
-                                        +psi.cols(0,1)*numericalFlux(X.subvec(Xend-7,Xend-4),X.subvec(Xend-3,Xend));
+            Flux.subvec(Xend-3,Xend)=   -psiRight*numericalFlux(X.subvec(Xend-3,Xend) , rightWallReflection*X.subvec(Xend-3,Xend))
+                                        +psiLeft*numericalFlux(X.subvec(Xend-7,Xend-4),X.subvec(Xend-3,Xend));
 
             //Innere Zellen
             #pragma omp parallel for if(N>=1024) schedule(static)
             for (uword k=1; k<=uword(N-2); k++) {
-                Flux.subvec(4*k,4*(k+1)-1) = -psi.cols(2,3) * numericalFlux( X.subvec(4*k,4*(k+1)-1) ,  X.subvec(4*(k+1), 4*(k+2)-1   ))  //rechter Rand
-                                             +psi.cols(0,1) * numericalFlux( X.subvec(4*(k-1),4*k-1) ,  X.subvec(4*k,4*(k+1)-1) )  ; //linker Rand
+                Flux.subvec(4*k,4*(k+1)-1) = -psiRight * numericalFlux( X.subvec(4*k,4*(k+1)-1) ,  X.subvec(4*(k+1), 4*(k+2)-1   ))  //rechter Rand
+                                             +psiLeft * numericalFlux( X.subvec(4*(k-1),4*k-1) ,  X.subvec(4*k,4*(k+1)-1) )  ; //linker Rand
                 }
             } break;
 
@@ -146,21 +151,20 @@ void ClassdXdt::FluidMatrix(const vec &X, vec &dXdt, const double &t) {
             {
             //Berechnung des numerischen Flusses
             //Fluss am Rand bzw Randbedingungen
-            Flux.subvec(0,2*order-1)=   - psi.cols(2,3) * numericalFlux(X.subvec(0,2*order-1), X.subvec(2*order,4*order-1))
+            Flux.subvec(0,2*order-1)=   - psiRight * numericalFlux(X.subvec(0,2*order-1), X.subvec(2*order,4*order-1))
                                         //+ psi.cols(0,1) * numericalFlux(kron(fliplr(eye<mat>(order,order)), mat({{1,0},{0,-1}}))* X.subvec(0,2*order-1), X.subvec(0,2*order-1) );//zero Gradient Condition linker globaler Rand;
-                                        + psi.cols(0,1) * numericalFlux(kron(ones<vec>(order),vec({1,1/Z_0}))*sin(omega*t) , X.subvec(0,2*order-1)); //von links kommende Sinuswelle
+                                        + psiLeft * numericalFlux(leftInflowState*sin(omega*t) , X.subvec(0,2*order-1)); //von links kommende Sinuswelle
 
             //cout << "Xend=" << Xend << endl;
-            Flux.subvec(Xend-2*order+1,Xend) =  - psi.cols(2,3) * numericalFlux(
-                                                X.subvec(Xend-2*order+1,Xend) , kron(fliplr(eye<mat>(order,order)),
-                                                mat({{1,0},{0,-1}}))*X.subvec(Xend-2*order+1,Xend))
-                                                + psi.cols(0,1)*numericalFlux(X.subvec(Xend-4*order+1,Xend-2*order),X.subvec(Xend-2*order+1,Xend));
+            Flux.subvec(Xend-2*order+1,Xend) =  - psiRight * numericalFlux(
+                                                X.subvec(Xend-2*order+1,Xend) , rightWallReflection*X.subvec(Xend-2*order+1,Xend))
+                                                + psiLeft*numericalFlux(X.subvec(Xend-4*order+1,Xend-2*order),X.subvec(Xend-2*order+1,Xend));
 
             //Innere Zellen
             #pragma omp parallel for if(N>=1024) schedule(static)
             for (uword k=1; k<=uword(N-2); k++) {
-                Flux.subvec(2*order*k,2*order*(k+1)-1) =    -psi.cols(2,3) * numericalFlux( X.subvec(2*order*k,2*order*(k+1)-1) ,  X.subvec(2*order*(k+1), 2*order*(k+2)-1   ))  //rechter Rand
-                                                            +psi.cols(0,1) * numericalFlux( X.subvec(2*order*(k-1),2*order*k-1) ,  X.subvec(2*order*k,2*order*(k+1)-1) )  ; //linker Rand
+                Flux.subvec(2*order*k,2*order*(k+1)-1) =    -psiRight * numericalFlux( X.subvec(2*order*k,2*order*(k+1)-1) ,  X.subvec(2*order*(k+1), 2*order*(k+2)-1   ))  //rechter Rand
+                                                            +psiLeft * numericalFlux( X.subvec(2*order*(k-1),2*order*k-1) ,  X.subvec(2*order*k,2*order*(k+1)-1) )  ; //linker Rand
             }
             }break;
     }

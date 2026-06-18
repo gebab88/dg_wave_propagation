@@ -19,7 +19,8 @@ class ClassdXdt
         double epsilon;
         uword N,order;
         mat Q;
-        mat Aplus, Aminus,psi,invM;
+        mat Aplus, Aminus,psi,psiLeft,psiRight,rightWallReflection;
+        vec leftInflowState;
         vec invMdiag;   // diagonal of the (block-)inverse mass matrix, per DOF
         uword Xend;
         vec k1,k2,k3,k4,k5,k6;
