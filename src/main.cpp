@@ -7,7 +7,9 @@
 #include <stdio.h>
 #include <chrono>
 #include <stdexcept>
+#include <climits>
 
+#include <omp.h>
 #include <yaml-cpp/yaml.h>
 
 #include "InitialAndBoundary.hpp"
@@ -28,6 +30,21 @@ static T cfgGet(const YAML::Node &cfg, const char *key) {
         cerr << "Config error: missing key '" << key << "'" << endl;
         exit(EXIT_FAILURE);
     }
+    try {
+        return cfg[key].as<T>();
+    } catch (const YAML::Exception &) {
+        cerr << "Config error: key '" << key << "' has an invalid value";
+        if (cfg[key].IsScalar())
+            cerr << " ('" << cfg[key].Scalar() << "')";
+        cerr << endl;
+        exit(EXIT_FAILURE);
+    }
+}
+
+template <typename T>
+static T cfgGetOr(const YAML::Node &cfg, const char *key, const T &fallback) {
+    if (!cfg[key])
+        return fallback;
     try {
         return cfg[key].as<T>();
     } catch (const YAML::Exception &) {
@@ -114,6 +131,46 @@ int main( int argc, char *argv[] ){
     const double mu     = cfgGet<double>(cfg, "mu");
     const double sigma  = cfgGet<double>(cfg, "sigma");
     const double height = cfgGet<double>(cfg, "height");
+
+    const bool EnablePlotting = cfgGetOr<bool>(cfg, "EnablePlotting", true);
+    const long long OpenMPMinCells_in = cfgGetOr<long long>(cfg, "OpenMPMinCells", 50);
+    if (OpenMPMinCells_in < 0) {
+        cerr << "Config error: OpenMPMinCells must be >= 0 (got "
+             << OpenMPMinCells_in << ")" << endl;
+        return 1;
+    }
+    long long OpenMPThreads_in = cfgGetOr<long long>(cfg, "OpenMPThreads", 2);
+    const long long OpenMPLargeMinCells_in = cfgGetOr<long long>(cfg, "OpenMPLargeMinCells", 512);
+    const long long OpenMPLargeThreads_in = cfgGetOr<long long>(cfg, "OpenMPLargeThreads", 4);
+    if (OpenMPThreads_in <= 0) {
+        cerr << "Config error: OpenMPThreads must be >= 1 (got "
+             << OpenMPThreads_in << ")" << endl;
+        return 1;
+    }
+    if (OpenMPLargeMinCells_in < 0) {
+        cerr << "Config error: OpenMPLargeMinCells must be >= 0 (got "
+             << OpenMPLargeMinCells_in << ")" << endl;
+        return 1;
+    }
+    if (OpenMPLargeThreads_in <= 0) {
+        cerr << "Config error: OpenMPLargeThreads must be >= 1 (got "
+             << OpenMPLargeThreads_in << ")" << endl;
+        return 1;
+    }
+
+    uword OpenMPMinCells = static_cast<uword>(OpenMPMinCells_in);
+    if (OpenMPLargeMinCells_in > 0 && N_in >= OpenMPLargeMinCells_in) {
+        OpenMPMinCells = static_cast<uword>(OpenMPLargeMinCells_in);
+        OpenMPThreads_in = OpenMPLargeThreads_in;
+    }
+    const uword OpenMPThreads = static_cast<uword>(OpenMPThreads_in);
+
+    if (OpenMPThreads > static_cast<uword>(INT_MAX)) {
+        cerr << "Config error: OpenMPThreads is too large (got "
+             << OpenMPThreads_in << ")" << endl;
+        return 1;
+    }
+    omp_set_num_threads(static_cast<int>(OpenMPThreads));
     // ------------------------------------------------------------------------------------
 
     float lambda_1 = c_0;
@@ -303,7 +360,7 @@ int main( int argc, char *argv[] ){
     //U0.print("U0=");
     //invMdiag.print("invMdiag=");
     //cout<<t1<<endl;
-    ClassdXdt dXdtObj(N,order,dx,Aplus,Aminus,Z_0,omega,Q,invMdiag,deltaT, Jac,U0); //Initialization Objekt FundamentalMatrix
+    ClassdXdt dXdtObj(N,order,dx,Aplus,Aminus,Z_0,omega,Q,invMdiag,deltaT, Jac,U0,OpenMPMinCells,OpenMPThreads); //Initialization Objekt FundamentalMatrix
     vec X=U0;
   //dXdtObj.FluidMatrix(U0, dXdt0, t1);
     double t= t0;
@@ -399,6 +456,11 @@ int main( int argc, char *argv[] ){
     cout << "The calculations are finished!" << endl;
     cout << "elapsed time: " << elapsed_time / 1000.0 /1000.0 << "s\n";
     
+    if (!EnablePlotting) {
+        cout << "Plotting disabled by config." << endl;
+        return 0;
+    }
+
     cout << "Plotting starts!" << endl;
 
     ClassPlot PlotObj(pressureSolution, TimeSteps, xnodes);

@@ -10,14 +10,15 @@ class ClassdXdt
 {
     public:
         ClassdXdt(uword N, uword order,double dx,mat Aplus, mat Aminus,double Z_0,
-                     double omega,  mat Q,  vec invMdiag,  double deltaT, double Jac, vec X0);
+                     double omega,  mat Q,  vec invMdiag,  double deltaT, double Jac, vec X0,
+                     uword OpenMPMinCells = 50, uword OpenMPThreads = 2);
 
         ~ClassdXdt();
 
 	//Attributes:
         double dx,Z_0, omega,deltaT,invJac;
         double epsilon;
-        uword N,order;
+        uword N,order,OpenMPMinCells,OpenMPThreads;
         mat Q;
         mat Aplus, Aminus,psi,psiLeft,psiRight,rightWallReflection;
         vec leftInflowState;

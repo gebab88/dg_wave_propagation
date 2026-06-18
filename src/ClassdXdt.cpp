@@ -4,10 +4,13 @@
 #include <stdexcept>
 
 ClassdXdt::ClassdXdt(uword N, uword order,double dx,mat Aplus, mat Aminus,double Z_0,
-                     double omega,  mat Q,  vec invMdiag,  double deltaT, double Jac, vec X0)
+                     double omega,  mat Q,  vec invMdiag,  double deltaT, double Jac, vec X0,
+                     uword OpenMPMinCells, uword OpenMPThreads)
 {
     this->N=N;
     this->order=order;
+    this->OpenMPMinCells=OpenMPMinCells;
+    this->OpenMPThreads=OpenMPThreads;
     this->dx=dx;
     this->Aplus=Aplus;
     this->Aminus=Aminus;
@@ -121,7 +124,7 @@ void ClassdXdt::FluidMatrix(const vec &X, vec &dXdt, const double &t) {
                                         + psiLeft*numericalFlux(X.subvec(Xend-3,Xend-2) , X.subvec(Xend-1,Xend));
 
              //Innere Zellen
-            #pragma omp parallel for if(N>=1024) schedule(static)
+            #pragma omp parallel for if(N>=OpenMPMinCells) num_threads(OpenMPThreads) schedule(static)
             for (uword k=1; k<=uword(N-2); k++) {
                 Flux.subvec(2*k,2*(k+1)-1) = -psiRight * numericalFlux( X.subvec(2*k,2*(k+1)-1) ,  X.subvec(2*(k+1), 2*(k+2)-1   ))  //rechter Rand
                                              +psiLeft * numericalFlux( X.subvec(2*(k-1),2*k-1) ,  X.subvec(2*k,2*(k+1)-1) )  ; //linker Rand
@@ -140,7 +143,7 @@ void ClassdXdt::FluidMatrix(const vec &X, vec &dXdt, const double &t) {
                                         +psiLeft*numericalFlux(X.subvec(Xend-7,Xend-4),X.subvec(Xend-3,Xend));
 
             //Innere Zellen
-            #pragma omp parallel for if(N>=1024) schedule(static)
+            #pragma omp parallel for if(N>=OpenMPMinCells) num_threads(OpenMPThreads) schedule(static)
             for (uword k=1; k<=uword(N-2); k++) {
                 Flux.subvec(4*k,4*(k+1)-1) = -psiRight * numericalFlux( X.subvec(4*k,4*(k+1)-1) ,  X.subvec(4*(k+1), 4*(k+2)-1   ))  //rechter Rand
                                              +psiLeft * numericalFlux( X.subvec(4*(k-1),4*k-1) ,  X.subvec(4*k,4*(k+1)-1) )  ; //linker Rand
@@ -161,7 +164,7 @@ void ClassdXdt::FluidMatrix(const vec &X, vec &dXdt, const double &t) {
                                                 + psiLeft*numericalFlux(X.subvec(Xend-4*order+1,Xend-2*order),X.subvec(Xend-2*order+1,Xend));
 
             //Innere Zellen
-            #pragma omp parallel for if(N>=1024) schedule(static)
+            #pragma omp parallel for if(N>=OpenMPMinCells) num_threads(OpenMPThreads) schedule(static)
             for (uword k=1; k<=uword(N-2); k++) {
                 Flux.subvec(2*order*k,2*order*(k+1)-1) =    -psiRight * numericalFlux( X.subvec(2*order*k,2*order*(k+1)-1) ,  X.subvec(2*order*(k+1), 2*order*(k+2)-1   ))  //rechter Rand
                                                             +psiLeft * numericalFlux( X.subvec(2*order*(k-1),2*order*k-1) ,  X.subvec(2*order*k,2*order*(k+1)-1) )  ; //linker Rand
@@ -269,9 +272,6 @@ vec CheckConvergence(){
     return
 }
 */
-
-
-
 
 
 

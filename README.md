@@ -128,6 +128,11 @@ Alle Parameter werden zur Laufzeit aus `config.yaml` gelesen — Änderungen wir
 | `x0, x1` | `0.0, 0.5` | Gebiet [m] |
 | `t0, t1` | `0.0, 2e-2` | Zeitintervall [s] |
 | `CFLReserve` | `0.45` | ordnungsunabhängige Sicherheitsfraktion des CFL-Limits |
+| `EnablePlotting` | `true` | `false` für reine Rechen-Benchmarks ohne PNG/MP4-Ausgabe |
+| `OpenMPMinCells` | `50` | Zellzahl, ab der die OpenMP-Zellschleife mit `OpenMPThreads` aktiv wird (`0` erzwingt OpenMP) |
+| `OpenMPThreads` | `2` | Anzahl OpenMP-Threads für mittlere Fälle |
+| `OpenMPLargeMinCells` | `512` | Zellzahl, ab der `OpenMPLargeThreads` verwendet wird (`0` deaktiviert die zweite Schwelle) |
+| `OpenMPLargeThreads` | `4` | Anzahl OpenMP-Threads für große Fälle |
 | `c_0` | `300.0` | Schallgeschwindigkeit [m/s] |
 | `rho_0` | `1.5` | Dichte [kg/m³] |
 | `freq_i` | `3000.0` | Anregungsfrequenz [Hz] |
@@ -150,7 +155,7 @@ Verfügbare Werte für `TimeIntegration`: `EulerExplicit`, `RungeKuttaClassic`, 
 - **`-O3`** statt `-O0`: ~2,3× auf die Simulation.
 - **Block-weiser Volumenterm:** Statt der dichten Matrix `A = kron(eye(N), Q)` wird `Q` zellweise angewandt (`vectorise(Q * reshape(X, 2·order, N))`) — ~N× weniger Arbeit; als GEMM, das Accelerate bei großem N über Kerne parallelisiert.
 - **Paralleles Plotten** (`ClassPlot`, `std::thread`): Jeder Thread baut ein gnuplot-Skript für seinen Frame-Anteil; alle Skripte werden aus *einer* Shell gestartet (`gnuplot … & … ; wait`). Vermeidet den macOS-`popen`/`fork`-Deadlock bei vielen Threads. → Plotten ~42 s ⇒ ~6 s pro 3000 Frames.
-- **OpenMP-Zellschleife** in `FluidMatrix`, aktiviert ab `N ≥ 1024`. Bei kleinem N (z. B. Default N=50) bleibt sie seriell, weil der Thread-Overhead die winzige Arbeit überwiegen würde; bei N=2048 bringt sie ~1,6×.
+- **OpenMP-Zellschleife** in `FluidMatrix`, auf dem Raspberry Pi standardmäßig aktiviert ab `N ≥ 50` mit 2 Threads und ab `N ≥ 512` mit 4 Threads. `OpenMPMinCells: 0` erzwingt OpenMP für Benchmarks. `scripts/benchmark-openmp.sh` testet mehrere `N`/Thread-Kombinationen ohne Plotting.
 
 ---
 

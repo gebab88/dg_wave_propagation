@@ -11,6 +11,17 @@
 #   RungeKuttaSecondOrder | PredictorCorrectorHeun
 TimeIntegration: PredictorCorrectorHeun
 
+# Disable for compute-only benchmark runs. When true, PNG frames and output.mp4
+# are generated after the simulation.
+EnablePlotting: true
+
+# On Raspberry Pi, use OpenMP for solver cell loops from N >= 50 with two
+# threads, and from N >= 512 with four threads.
+OpenMPMinCells: 50
+OpenMPThreads: 2
+OpenMPLargeMinCells: 512
+OpenMPLargeThreads: 4
+
 # Order-independent safety fraction of the CFL limit (the order-dependent
 # 1/(2*order-1) factor is applied in code). 0.45 is stable across orders.
 CFLReserve: 0.45

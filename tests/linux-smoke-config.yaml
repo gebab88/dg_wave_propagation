@@ -2,6 +2,11 @@
 # while still exercising config parsing, the generic order path, plotting, and
 # ffmpeg video encoding.
 TimeIntegration: RungeKuttaClassic
+EnablePlotting: true
+OpenMPMinCells: 50
+OpenMPThreads: 2
+OpenMPLargeMinCells: 512
+OpenMPLargeThreads: 4
 CFLReserve: 0.45
 
 N: 4
