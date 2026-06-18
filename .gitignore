@@ -14,3 +14,6 @@ run/
 
 # macOS
 .DS_Store
+
+# Config
+config.yaml

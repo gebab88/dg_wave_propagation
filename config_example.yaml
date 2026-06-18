@@ -1,0 +1,38 @@
+# Discontinuous Galerkin 1D acoustic-wave solver — runtime configuration.
+# Replaces the former compile-time include/config.hpp: edit and re-run, no rebuild.
+# Path is taken from argv[1], else "config.yaml" in the working directory.
+#
+# Only independent parameters live here. Derived quantities are computed in code:
+#   Npoints = N + 1,  Z_0 = c_0 * rho_0,  omega = 2*pi*freq_i,
+#   x = linspace(x0, x1, Npoints),  dx = x[1]-x[0],  Jac = dx/2.
+
+# Time integrator. One of:
+#   EulerExplicit | RungeKuttaClassic | RungeKuttaSecond |
+#   RungeKuttaSecondOrder | PredictorCorrectorHeun
+TimeIntegration: PredictorCorrectorHeun
+
+# Order-independent safety fraction of the CFL limit (the order-dependent
+# 1/(2*order-1) factor is applied in code). 0.45 is stable across orders.
+CFLReserve: 0.45
+
+N: 50          # number of cells
+order: 5       # nodal order per cell (functional: 2, 5, and general order >= 3)
+
+# Time interval [s]
+t0: 0.0
+t1: 2.0e-2
+
+# Spatial domain [m]
+x0: 0.0
+x1: 0.5
+
+# Fluid parameters
+c_0: 300.0     # speed of sound [m/s]
+rho_0: 1.5     # density [kg/m^3]
+
+freq_i: 3000.0 # excitation frequency [Hz]
+
+# Parameters of the (optional) Gaussian initial pressure distribution
+mu: 0.1
+sigma: 0.02
+height: 1.0
