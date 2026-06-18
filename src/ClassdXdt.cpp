@@ -1,9 +1,10 @@
 #include "ClassdXdt.hpp"
 #include "vandermonde.hpp"
 #include <omp.h>
+#include <stdexcept>
 
 ClassdXdt::ClassdXdt(uword N, uword order,double dx,mat Aplus, mat Aminus,double Z_0,
-                     double omega,  mat Q,  mat invM,  double deltaT, double Jac, vec X0) 
+                     double omega,  mat Q,  vec invMdiag,  double deltaT, double Jac, vec X0)
 {
     this->N=N;
     this->order=order;
@@ -13,14 +14,12 @@ ClassdXdt::ClassdXdt(uword N, uword order,double dx,mat Aplus, mat Aminus,double
     this->Z_0=Z_0;
     this->omega=omega;
     this->Q=Q;
-    this->invM=invM;
     // The nodal Gauss-Legendre basis yields a DIAGONAL mass matrix, so applying
-    // M^{-1} is just a per-DOF scaling. Cache that diagonal. Fall back to ones
-    // (M = I) when the caller supplies no mass matrix (e.g. order 1).
-    if (invM.is_empty())
-        this->invMdiag = ones<vec>(2*order*N);
-    else
-        this->invMdiag = invM.diag();
+    // M^{-1} is just a per-DOF scaling. main() now provides that diagonal
+    // directly instead of building the dense kron(eye(N), inv(M)).
+    this->invMdiag = invMdiag;
+    if (this->invMdiag.n_elem != 2*order*N)
+        throw std::invalid_argument("invMdiag has the wrong size");
     this->deltaT=deltaT;
     //this->Jac=Jac;
     this->Xend=uword(X0.size()-1);

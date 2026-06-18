@@ -10,7 +10,7 @@ class ClassdXdt
 {
     public:
         ClassdXdt(uword N, uword order,double dx,mat Aplus, mat Aminus,double Z_0,
-                     double omega,  mat Q,  mat invM,  double deltaT, double Jac, vec X0);
+                     double omega,  mat Q,  vec invMdiag,  double deltaT, double Jac, vec X0);
 
         ~ClassdXdt();
 

@@ -130,7 +130,8 @@ int main( int argc, char *argv[] ){
     mat Aplus = R * lambda_plus * R_inv;
     mat Aminus = R * lambda_minus * R_inv;
 
-    mat Q,invM;
+    mat Q;
+    vec invMdiag;
     mat U0;
     mat A=eye<mat>(2,2);
 
@@ -153,6 +154,8 @@ int main( int argc, char *argv[] ){
                 //ui.print("ui =");
                 U0.col(i)=ui;
             }
+            Q=zeros<mat>(2,2);
+            invMdiag=ones<vec>(2*order*N);
         //U0.print("U0= ");
         }break;
 
@@ -178,13 +181,8 @@ int main( int argc, char *argv[] ){
             //Stuetz.print("Stütz=");
             //xi.print("xi: ");
         }
-            // Aufbau der Massenmatrix
-            mat M=eye<mat>(4,4);
-            //mat invM=inv(M); //Inverse der Massenmatrix
-            invM=M; //Inverse der Massenmatrix für 2 Stuetzstellen Einheitsmatrix (assign to outer invM, no shadowing)
-            invM=kron(eye<mat>(N,N),invM); //Expansion auf alle Zellen
-            //invM.print("invM= ");
-            //invM.save("invM.dat",raw_ascii);
+            // Inverse mass matrix is the identity for two support points.
+            invMdiag=ones<vec>(2*order*N);
 //
 //          Berechnung des Flussintegrals, Steifigkeitsmatrix
             Q = kron(mat({{-1, -1},{ 1, 1}}), eye<mat>(2,2));
@@ -241,10 +239,7 @@ int main( int argc, char *argv[] ){
             vec Mdiag=kron(eye<mat>(order,order),ones<vec>(2))*alpha;
             mat M=diagmat(Mdiag);
             //M.print("M= ");
-            invM=inv(M); //Inverse der Massenmatrix (assign to outer invM, no shadowing)
-            invM=kron(eye<mat>(N,N),invM); //Expansion auf alle Zellen
-            //invM.print("invM= ");
-            //invM.save("invM.dat",raw_ascii);
+            invMdiag=repmat(1.0/Mdiag, N, 1); // diagonal of kron(I_N, inv(M))
 //
 //          Berechnung des Flussintegrals, Steifigkeitsmatrix
             // Berechnung der transpornierten Differentationsmatrix
@@ -281,8 +276,7 @@ int main( int argc, char *argv[] ){
         // Diagonal mass matrix: each node's weight is shared by both fields (p,u).
         vec Mdiag=kron(alpha,ones<vec>(2));
         mat M=diagmat(Mdiag);
-        invM=inv(M);
-        invM=kron(eye<mat>(N,N),invM);         //Expansion auf alle Zellen
+        invMdiag=repmat(1.0/Mdiag, N, 1);     // diagonal of kron(I_N, inv(M))
 
         // Stiffness matrix Q = Funktionalmat * D^T * M, kron'd to the 2-field system.
         mat DT=TransposeDiffMatrix(order,Stuetz);
@@ -307,9 +301,9 @@ int main( int argc, char *argv[] ){
     // makes CFLReserve an order-independent safety fraction of the CFL limit.
     const double deltaT = CFLReserve * dx / (abs(lambda_1) * (2.0*order - 1.0));
     //U0.print("U0=");
-    //invM.print("invM=");
+    //invMdiag.print("invMdiag=");
     //cout<<t1<<endl;
-    ClassdXdt dXdtObj(N,order,dx,Aplus,Aminus,Z_0,omega,Q,invM,deltaT, Jac,U0); //Initialization Objekt FundamentalMatrix
+    ClassdXdt dXdtObj(N,order,dx,Aplus,Aminus,Z_0,omega,Q,invMdiag,deltaT, Jac,U0); //Initialization Objekt FundamentalMatrix
     vec X=U0;
   //dXdtObj.FluidMatrix(U0, dXdt0, t1);
     double t= t0;
